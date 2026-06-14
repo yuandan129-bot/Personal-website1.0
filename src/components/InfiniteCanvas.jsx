@@ -1,0 +1,389 @@
+import { useState, useRef, useCallback, useEffect } from 'react'
+import { designProjects } from '../data/designs'
+
+const COLS = 6
+const COL_W = 254
+const ROW_H = 190
+const GAP = 12
+const TILE_W = COLS * COL_W + (COLS + 1) * GAP
+const TARGET_TOTAL = 42   // 目标卡片总数（含介绍卡片，6列×约7行）
+
+// ── 中心介绍卡片 ──
+const INTRO_CARD = {
+  id: 'intro',
+  isIntro: true,
+  size: 'L',
+  title: 'Design Works',
+  subtitle: '设计作品精选',
+  categories: ['品牌设计', '包装设计', '插画', 'UI设计', '活动视觉', '空间设计'],
+}
+
+// ── 生成占位卡片 ──
+function createPlaceholders(count) {
+  const list = []
+  for (let i = 0; i < count; i++) {
+    list.push({
+      id: `placeholder-${i}`,
+      isPlaceholder: true,
+      size: 'S',
+    })
+  }
+  return list
+}
+
+// ── 网格打包 ──
+function packGrid(projects) {
+  const occupied = new Set()
+  const items = []
+
+  // 介绍卡片：L 尺寸（2×2），横版 4:3 构图，居中放置
+  const introCol = 1
+  const introRow = 2
+  for (let r = introRow; r < introRow + 2; r++) {
+    for (let c = introCol; c < introCol + 2; c++) {
+      occupied.add(`${r}-${c}`)
+    }
+  }
+  items.push({
+    ...INTRO_CARD,
+    col: introCol, row: introRow, sc: 2, sr: 2,
+    w: 2 * COL_W + GAP,
+    h: 2 * ROW_H + GAP,
+  })
+
+  // 实际项目 + 占位符混合
+  const existingCount = projects.length
+  const needed = Math.max(0, TARGET_TOTAL - 1 - existingCount) // -1 因为介绍卡片占 1 个位置
+  const placeholders = createPlaceholders(needed)
+  const allProjects = [...projects, ...placeholders]
+
+  allProjects.forEach((project) => {
+    let sc = 1, sr = 1
+    if (project.size === 'L') { sc = 2; sr = 2 }
+    else if (project.size === 'M') { sc = 1; sr = 2 }
+
+    let placed = false
+    for (let row = 0; row < 30 && !placed; row++) {
+      for (let col = 0; col < COLS && !placed; col++) {
+        if (col + sc > COLS) continue
+        let free = true
+        for (let r = row; r < row + sr && free; r++) {
+          for (let c = col; c < col + sc && free; c++) {
+            if (occupied.has(`${r}-${c}`)) { free = false; break }
+          }
+        }
+        if (free) {
+          for (let r = row; r < row + sr; r++) {
+            for (let c = col; c < col + sc; c++) {
+              occupied.add(`${r}-${c}`)
+            }
+          }
+          items.push({
+            ...project,
+            col, row, sc, sr,
+            w: sc * COL_W + (sc - 1) * GAP,
+            h: sr * ROW_H + (sr - 1) * GAP,
+          })
+          placed = true
+        }
+      }
+    }
+  })
+
+  let maxRow = 0
+  items.forEach(it => { if (it.row + it.sr > maxRow) maxRow = it.row + it.sr })
+  const tileH = maxRow * (ROW_H + GAP) + GAP
+
+  const all = items.map((item) => ({
+    ...item,
+    x: item.col * (COL_W + GAP) + GAP,
+    y: item.row * (ROW_H + GAP) + GAP,
+  }))
+
+  return { all, tileH, introCol, introRow }
+}
+
+// ── 介绍卡片中心坐标 ──
+function getIntroCenter(tileH, introCol, introRow) {
+  const cx = introCol * (COL_W + GAP) + GAP + (2 * COL_W + GAP) / 2
+  const cy = introRow * (ROW_H + GAP) + GAP + (2 * ROW_H + GAP) / 2
+  return { cx, cy }
+}
+
+// ══════════════════════════════════════════
+// 组件
+// ══════════════════════════════════════════
+export default function InfiniteCanvas({ onCardClick }) {
+  const { all, tileH, introCol, introRow } = packGrid(designProjects)
+  const introCenter = getIntroCenter(tileH, introCol, introRow)
+
+  const [position, setPosition] = useState({
+    x: window.innerWidth / 2 - introCenter.cx,
+    y: window.innerHeight / 2 - introCenter.cy,
+  })
+
+  const isDragging = useRef(false)
+  const hasMoved = useRef(false)
+  const dragStart = useRef({ x: 0, y: 0 })
+  const posStart = useRef({ x: 0, y: 0 })
+  const velocity = useRef({ x: 0, y: 0 })
+  const animRef = useRef(null)
+  const lastMove = useRef({ x: 0, y: 0, time: Date.now() })
+  const positionRef = useRef(position)
+  useEffect(() => { positionRef.current = position }, [position])
+
+  // ── 边界常量 ──
+  const getBounds = useCallback(() => ({
+    maxX: 60,
+    minX: -(TILE_W - window.innerWidth + 60),
+    maxY: 60,
+    minY: -(tileH - window.innerHeight + 60),
+  }), [tileH])
+
+  // ── 渐进阻力 + 弹簧回弹 ──
+  const applyBoundary = useCallback((val, min, max) => {
+    const LIMIT = 60   // 自由拖拽边界
+    const BUFFER = 20  // 弹性过冲区间
+    if (val > max) {
+      const over = val - max
+      if (over > BUFFER) return max + BUFFER  // 硬上限
+      // 指数阻力：越远越难拉
+      const t = over / BUFFER
+      const resistance = 1 - t * t * 0.85
+      return max + over * resistance
+    }
+    if (val < min) {
+      const over = min - val
+      if (over > BUFFER) return min - BUFFER
+      const t = over / BUFFER
+      const resistance = 1 - t * t * 0.85
+      return min - over * resistance
+    }
+    return val
+  }, [])
+
+  // ── 弹簧回弹（临界阻尼，不振荡）──
+  const springBack = useCallback((val, min, max, vel) => {
+    const STIFFNESS = 0.06   // 弹簧刚度（低=软）
+    const DAMPING = 0.82     // 速度阻尼（高=快停）
+    const SNAP = 1.5         // 在此范围内直接吸附到边界
+
+    if (val > max) {
+      const over = val - max
+      if (over < SNAP && Math.abs(vel) < 0.5) {
+        return { val: max, vel: 0 }  // 吸附归位
+      }
+      const force = over * STIFFNESS
+      // 回弹速度：只向中心方向，避免反向振荡
+      const newVel = vel * DAMPING - force
+      return { val: val - force, vel: Math.min(newVel, 0) } // 不允许向右的速度
+    }
+    if (val < min) {
+      const over = min - val
+      if (over < SNAP && Math.abs(vel) < 0.5) {
+        return { val: min, vel: 0 }
+      }
+      const force = over * STIFFNESS
+      const newVel = vel * DAMPING + force
+      return { val: val + force, vel: Math.max(newVel, 0) } // 不允许向左的速度
+    }
+    return { val, vel }
+  }, [])
+
+  // ── 惯性 ──
+  const applyInertia = useCallback(() => {
+    const v = velocity.current
+    const th = 0.15
+    const bounds = getBounds()
+    // 判断是否完全静止
+    const atEdgeX = (v.x > 0 && positionRef.current.x >= bounds.maxX - 2) ||
+                    (v.x < 0 && positionRef.current.x <= bounds.minX + 2)
+    const atEdgeY = (v.y > 0 && positionRef.current.y >= bounds.maxY - 2) ||
+                    (v.y < 0 && positionRef.current.y <= bounds.minY + 2)
+    const canStopX = Math.abs(v.x) < th || atEdgeX
+    const canStopY = Math.abs(v.y) < th || atEdgeY
+
+    if (canStopX && canStopY) {
+      // 靠边时做最后的弹簧归位
+      const sx = springBack(positionRef.current.x, bounds.minX, bounds.maxX, v.x)
+      const sy = springBack(positionRef.current.y, bounds.minY, bounds.maxY, v.y)
+      if (Math.abs(sx.val - positionRef.current.x) < 0.1 &&
+          Math.abs(sy.val - positionRef.current.y) < 0.1) return
+      velocity.current.x = sx.vel
+      velocity.current.y = sy.vel
+      setPosition({ x: sx.val, y: sy.val })
+      animRef.current = requestAnimationFrame(applyInertia)
+      return
+    }
+
+    v.x *= 0.92
+    v.y *= 0.92
+
+    setPosition((prev) => {
+      let nx = prev.x + v.x
+      let ny = prev.y + v.y
+
+      const sx = springBack(nx, bounds.minX, bounds.maxX, v.x)
+      const sy = springBack(ny, bounds.minY, bounds.maxY, v.y)
+      nx = sx.val; ny = sy.val
+      v.x = sx.vel; v.y = sy.vel
+
+      return { x: nx, y: ny }
+    })
+    animRef.current = requestAnimationFrame(applyInertia)
+  }, [getBounds, springBack])
+
+  const stop = useCallback(() => {
+    if (animRef.current) { cancelAnimationFrame(animRef.current); animRef.current = null }
+  }, [])
+  useEffect(() => () => stop(), [stop])
+
+  // ── 滚轮 ──
+  const onWheel = useCallback((e) => {
+    e.preventDefault()
+    stop()
+    const wx = e.deltaX * 0.8
+    const wy = e.deltaY * 0.8
+    const bounds = getBounds()
+    setPosition((prev) => ({
+      x: applyBoundary(prev.x - wx, bounds.minX, bounds.maxX),
+      y: applyBoundary(prev.y - wy, bounds.minY, bounds.maxY),
+    }))
+    velocity.current = { x: -wx * 0.3, y: -wy * 0.3 }
+    animRef.current = requestAnimationFrame(applyInertia)
+  }, [stop, applyInertia, getBounds, applyBoundary])
+
+  // ── 指针事件 ──
+  const down = (e) => {
+    stop(); isDragging.current = true; hasMoved.current = false
+    dragStart.current = { x: e.clientX, y: e.clientY }
+    posStart.current = { ...positionRef.current }
+    lastMove.current = { x: e.clientX, y: e.clientY, time: Date.now() }
+  }
+  const move = (e) => {
+    if (!isDragging.current) return
+    const dt = Date.now() - lastMove.current.time
+    const dx = e.clientX - dragStart.current.x
+    const dy = e.clientY - dragStart.current.y
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) hasMoved.current = true
+    if (dt > 0) {
+      velocity.current = {
+        x: ((e.clientX - lastMove.current.x) / dt) * 16,
+        y: ((e.clientY - lastMove.current.y) / dt) * 16,
+      }
+    }
+    lastMove.current = { x: e.clientX, y: e.clientY, time: Date.now() }
+    // 拖拽时应用渐进阻力边界
+    const bounds = getBounds()
+    const rawX = posStart.current.x + dx
+    const rawY = posStart.current.y + dy
+    setPosition({
+      x: applyBoundary(rawX, bounds.minX, bounds.maxX),
+      y: applyBoundary(rawY, bounds.minY, bounds.maxY),
+    })
+  }
+  const up = () => {
+    isDragging.current = false
+    if (hasMoved.current) animRef.current = requestAnimationFrame(applyInertia)
+  }
+
+  // ── 点击 ──
+  const cardClick = (item) => {
+    if (hasMoved.current) return
+    if (item.isPlaceholder) return
+    if (item.isIntro) {
+      setPosition({
+        x: window.innerWidth / 2 - introCenter.cx,
+        y: window.innerHeight / 2 - introCenter.cy,
+      })
+      return
+    }
+    if (onCardClick) onCardClick(item)
+  }
+
+  // ── 渲染一张卡片 ──
+  const renderCard = (item) => {
+    const isIntro = item.isIntro
+    const isPlaceholder = item.isPlaceholder
+
+    return (
+      <div
+        key={item.id}
+        className={`absolute rounded-2xl overflow-hidden transition-all duration-300
+                   ${isIntro
+                     ? 'cursor-pointer bg-white border border-gray-200 shadow-[0_4px_16px_rgba(0,0,0,0.10)] hover:shadow-[0_6px_24px_rgba(0,0,0,0.16)]'
+                     : isPlaceholder
+                       ? 'bg-gray-100 border border-gray-200'
+                       : 'cursor-pointer bg-white shadow-[0_2px_12px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_20px_rgba(0,0,0,0.14)]'
+                   }`}
+        style={{
+          left: item.x,
+          top: item.y,
+          width: item.w,
+          height: item.h,
+        }}
+        onClick={(e) => { e.stopPropagation(); cardClick(item) }}
+      >
+        {isIntro ? (
+          /* ── 介绍卡片 ── */
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 bg-white">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="h-px w-6 bg-gray-200" />
+              <span className="text-[10px] font-bold tracking-[0.4em] uppercase text-gray-300">portfolio</span>
+              <div className="h-px w-6 bg-gray-200" />
+            </div>
+            <h2 className="text-2xl font-bold font-display text-gray-800 mb-2">{item.title}</h2>
+            <p className="text-sm text-gray-400 mb-5">{item.subtitle}</p>
+            <div className="flex flex-wrap gap-1.5 justify-center">
+              {item.categories.map((cat) => (
+                <span key={cat} className="px-3 py-1 text-[10px] font-medium rounded-full
+                                           bg-gray-50 text-gray-400 border border-gray-100">
+                  {cat}
+                </span>
+              ))}
+            </div>
+            <p className="mt-5 text-[11px] text-gray-300 tracking-wider">拖拽画布 · 探索作品</p>
+          </div>
+        ) : isPlaceholder ? (
+          /* ── 占位卡片（纯灰底）── */
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-gray-300 text-xs tracking-wider">待补充</span>
+          </div>
+        ) : (
+          /* ── 设计项目卡片 ── */
+          <>
+            {item.image && (
+              <img
+                src={item.image}
+                alt={item.title}
+                className="absolute inset-0 w-full h-full object-cover"
+                loading="lazy"
+              />
+            )}
+          </>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div
+      className="w-full h-full overflow-hidden relative cursor-grab active:cursor-grabbing no-select"
+      onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerLeave={up}
+      onWheel={onWheel}
+      style={{ touchAction: 'none' }}
+    >
+      <div
+        className="absolute top-0 left-0"
+        style={{
+          transform: `translate3d(${position.x}px, ${position.y}px, 0)`,
+          width: TILE_W,
+          height: tileH,
+          willChange: 'transform',
+        }}
+      >
+        {all.map((item) => renderCard(item))}
+      </div>
+    </div>
+  )
+}

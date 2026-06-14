@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:designtoolmark.com)",
+      "Bash(curl -s http://localhost:5173/src/pages/DesignPage.jsx)",
+      "Bash(pkill -f \"vite\")",
+      "Read(//dev/**)",
+      "Bash(curl -s http://localhost:5173/src/components/GradualBlur.jsx)",
+      "Bash(curl -s http://localhost:5173/src/components/ThinkingColumn.jsx)",
+      "Bash(curl -s http://localhost:5173/src/components/ThinkingModal.jsx)",
+      "Bash(curl -s http://localhost:5173/src/pages/ThinkingPage.jsx)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code} %{size_download}\" http://localhost:5173/images/topvid-talk.jpg)",
+      "Bash(curl -s -I http://localhost:5173/images/topvid-talk.jpg)",
+      "Bash(npx vite *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173/)",
+      "Bash(node -e \"console.log\\(require\\('three/package.json'\\).version\\)\")",
+      "Bash(curl -s http://localhost:5173/src/main.jsx)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173/src/components/GlassNav.jsx)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173/src/components/GlassSurface.jsx)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173/src/App.jsx)",
+      "Bash(curl -s http://localhost:5173/)",
+      "Bash(curl -s http://localhost:5173/images/night.png -o /dev/null -w \"night: %{http_code} %{size_download}B\\\\n\")",
+      "Bash(curl -s http://localhost:5173/images/day.png -o /dev/null -w \"day: %{http_code} %{size_download}B\\\\n\")",
+      "Bash(curl -s -o /dev/null -w \"CSS: %{http_code}\\\\n\" http://localhost:5173/src/components/GlassSurface.css)",
+      "Bash(curl -s -o /dev/null -w \"Nav: %{http_code}\\\\n\" http://localhost:5173/src/components/GlassNav.jsx)",
+      "Bash(curl -s -o /dev/null -w \"Reveal: %{http_code}\\\\n\" http://localhost:5173/src/components/DayNightReveal.jsx)",
+      "Bash(curl -s -o /dev/null -w \"Toggle: %{http_code}\\\\n\" http://localhost:5173/src/components/DayNightToggle.jsx)"
+    ]
+  }
+}

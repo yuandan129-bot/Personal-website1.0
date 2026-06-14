@@ -1,0 +1,73 @@
+export const designProjects = [
+  {
+    id: 'd-1', title: '元气森林 品牌视觉', category: '品牌设计', size: 'S',
+    color: '#e8f5e9', textColor: '#2e7d32', accentColor: '#43a047',
+    year: '2024', tags: ['品牌', 'LOGO', 'VI'],
+    image: '/images/design/Design1.png', imgW: 1844, imgH: 1386,
+    description: '为新锐饮品品牌元气森林打造的完整品牌视觉体系，包含 LOGO 设计、VI 手册、包装规范及线上视觉延展。从品牌策略出发，构建兼具年轻感与品质感的视觉语言。',
+  },
+
+  {
+    id: 'd-3', title: '三顿半 包装设计', category: '包装设计', size: 'S',
+    color: '#fff3e0', textColor: '#e65100', accentColor: '#f57c00',
+    year: '2024', tags: ['包装', '咖啡', '极简'],
+    image: '/images/design/Design3.png', imgW: 1844, imgH: 1386,
+    description: '为精品咖啡品牌三顿半设计的胶囊系列包装，以极简几何形态传达品牌的高级感和辨识度。通过结构与色彩的系统化设计，建立完整的货架识别体系。',
+  },
+  {
+    id: 'd-4', title: '小红书 社区插画', category: '插画', size: 'S',
+    color: '#f3e5f5', textColor: '#6a1b9a', accentColor: '#8e24aa',
+    year: '2023', tags: ['插画', '社区', '系列'],
+    image: '/images/design/Design4.png', imgW: 1844, imgH: 1386,
+    description: '为小红书社区板块创作的系列插画，涵盖节日、活动、日常场景等多种主题风格。以温暖治愈的笔触传递社区温度，增强用户情感共鸣。',
+  },
+  {
+    id: 'd-5', title: '蔚来 NIO Life', category: '品牌设计', size: 'S',
+    color: '#e3f2fd', textColor: '#1565c0', accentColor: '#1e88e5',
+    year: '2024', tags: ['品牌', '出行', '全案'],
+    image: '/images/design/Design5.png', imgW: 1844, imgH: 1386,
+    description: '蔚来生活方式品牌 NIO Life 的视觉升级，从品牌策略到视觉执行的全案设计。涵盖服饰、家居、户外等多品类，打造高端生活方式视觉体系。',
+  },
+  {
+    id: 'd-6', title: '喜茶 限时快闪', category: '空间设计', size: 'S',
+    color: '#e0f7fa', textColor: '#00838f', accentColor: '#00acc1',
+    year: '2023', tags: ['空间', '快闪', '体验'],
+    image: '/images/design/Design6.png', imgW: 1844, imgH: 1386,
+    description: '喜茶限时快闪店的空间视觉设计，将茶文化与现代装置艺术融合，创造独特的沉浸式消费体验。从空间动线到视觉落点，每个细节都服务于品牌叙事。',
+  },
+  {
+    id: 'd-7', title: '腾讯 公益H5', category: 'UI设计', size: 'S',
+    color: '#fff8e1', textColor: '#f9a825', accentColor: '#fbc02d',
+    year: '2024', tags: ['UI', 'H5', '公益'],
+    image: '/images/design/Design7.png', imgW: 1844, imgH: 1386,
+    description: '腾讯公益 99 公益日 H5 页面设计，以温暖的视觉语言传递公益力量，提升用户参与度和捐赠转化。注重情感化设计与无障碍体验。',
+  },
+  {
+    id: 'd-8', title: '泡泡玛特 盲盒', category: '包装设计', size: 'M',
+    color: '#fce4ec', textColor: '#ad1457', accentColor: '#d81b60',
+    year: '2023', tags: ['包装', '潮玩', '联名'],
+    image: '/images/design/Design8.png', imgW: 1844, imgH: 2202,
+    description: '泡泡玛特联名盲盒系列的包装设计，以潮流插画风格打造收藏级的开箱体验。通过材质、工艺与视觉的配合，提升产品的收藏仪式感。',
+  },
+  {
+    id: 'd-9', title: '字节 飞书品牌书', category: '品牌设计', size: 'M',
+    color: '#e8eaf6', textColor: '#283593', accentColor: '#3949ab',
+    year: '2024', tags: ['品牌', '规范', '手册'],
+    image: '/images/design/Design9.png', imgW: 1844, imgH: 2202,
+    description: '飞书品牌规范手册的设计与编排，确保品牌在各触点的一致性和专业性。从色彩、字体、图形到版式，建立完整的设计语言系统。',
+  },
+  {
+    id: 'd-10', title: '得物 潮流插画', category: '插画', size: 'M',
+    color: '#efebe9', textColor: '#4e342e', accentColor: '#6d4c41',
+    year: '2024', tags: ['插画', '潮流', '电商'],
+    image: '/images/design/Design10.png', imgW: 1844, imgH: 2202,
+    description: '为得物 App 创作的潮流风格插画系列，覆盖球鞋、潮服、数码等多个品类。以大胆的色彩和动感的构图，塑造年轻化的品牌视觉调性。',
+  },
+  {
+    id: 'd-11', title: '美团 买菜品牌', category: '品牌设计', size: 'S',
+    color: '#e8f5e9', textColor: '#1b5e20', accentColor: '#2e7d32',
+    year: '2023', tags: ['品牌', '生鲜', '电商'],
+    image: '/images/design/Design11.png', imgW: 1844, imgH: 1386,
+    description: '美团买菜品牌视觉升级，以新鲜、快捷为核心概念，打造亲民的生鲜电商品牌形象。从 LOGO 到全链路触点，传递"鲜"的品牌心智。',
+  },
+]
