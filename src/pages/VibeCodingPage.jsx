@@ -1,74 +1,124 @@
-import { motion } from 'framer-motion'
+import { useState, useMemo } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import PageTransition from '../components/PageTransition'
 import BackButton from '../components/BackButton'
 import ProjectCard from '../components/ProjectCard'
+import ShinyText from '../components/ui/ShinyText'
 import { vibeCodingProjects } from '../data/projects'
 
 const FILTERS = [
-  { key: '全部', icon: '' },
-  { key: 'Vibe Coding', icon: '⚡' },
-  { key: 'Full Stack', icon: '🔧' },
-  { key: 'Tool', icon: '🛠' },
-  { key: 'Design Tool', icon: '🎨' },
+  { key: '全部', label: '全部' },
+  { key: 'Vibe Coding', label: 'Vibe Coding' },
+  { key: 'Skill', label: 'Skill' },
+  { key: 'Agent', label: 'Agent' },
 ]
 
 export default function VibeCodingPage() {
+  const [activeFilter, setActiveFilter] = useState('全部')
+
+  const filteredProjects = useMemo(() => {
+    if (activeFilter === '全部') return vibeCodingProjects
+    return vibeCodingProjects.filter((p) => p.category === activeFilter)
+  }, [activeFilter])
+
   return (
     <PageTransition className="bg-black">
       <BackButton />
 
       <div className="w-full h-full overflow-y-auto">
         <div className="max-w-6xl mx-auto px-6 pt-24 pb-16">
-          {/* 页面标题 */}
+          {/* ── 页面标题 — 白色 ShinyText 流光 ── */}
           <motion.div
-            className="mb-12"
+            className="mb-10"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <p className="text-neon-purple text-xs font-bold tracking-[0.3em] uppercase mb-2">
-              ⚡ Projects & Experiments
+            <p className="text-xs font-bold tracking-[0.3em] uppercase mb-2 text-white/25">
+              Projects & Experiments
             </p>
-            <h1 className="text-4xl font-bold font-display text-white/90">
-              Vibe <span className="text-neon-purple text-glow-purple">Coding</span>
-            </h1>
+            <ShinyText
+              text="Vibe Coding"
+              speed={3}
+              color="#b0b0b0"
+              shineColor="#ffffff"
+              spread={100}
+              style={{
+                fontSize: '2.25rem',
+                lineHeight: '2.5rem',
+                fontWeight: 700,
+                fontFamily: "'DM Sans', 'Inter', sans-serif",
+              }}
+            />
             <p className="mt-3 text-sm text-white/30 max-w-lg leading-relaxed">
-              用代码探索想法的实验场。每个项目都是独立完成的设计+开发——从 AI 工具到像素天气，保持好奇心，快速验证，持续迭代。
+              用代码探索想法的实验场。项目、Skill、Agent —— 保持好奇心，快速验证，持续迭代。
             </p>
           </motion.div>
 
-          {/* 筛选标签 */}
+          {/* ── 筛选标签 — 功能化 ── */}
           <motion.div
-            className="flex gap-2 mb-8 flex-wrap"
+            className="flex gap-2 mb-10 flex-wrap"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
           >
-            {FILTERS.map(({ key, icon }, i) => (
-              <motion.button
-                key={key}
-                className={`px-4 py-1.5 text-xs font-medium rounded-full border transition-all
-                           ${i === 0
-                             ? 'bg-white/15 text-white border-white/20'
-                             : 'bg-transparent text-white/40 border-white/10 hover:text-white/70 hover:border-white/25'
-                           }`}
-                whileHover={{ scale: 1.04 }}
-                whileTap={{ scale: 0.96 }}
-              >
-                {icon && <span className="mr-1.5">{icon}</span>}
-                {key}
-              </motion.button>
-            ))}
+            {FILTERS.map(({ key, label }) => {
+              const isActive = activeFilter === key
+              return (
+                <motion.button
+                  key={key}
+                  onClick={() => setActiveFilter(key)}
+                  className={`relative px-5 py-2 text-xs font-medium rounded-full border transition-all duration-300
+                             ${isActive
+                               ? 'bg-white text-black border-white'
+                               : 'bg-transparent text-white/40 border-white/10 hover:text-white/70 hover:border-white/25'
+                             }`}
+                  whileHover={{ scale: 1.04 }}
+                  whileTap={{ scale: 0.96 }}
+                >
+                  {/* 数量小标 */}
+                  {key !== '全部' && (
+                    <span className={`ml-1.5 text-[10px] ${isActive ? 'text-black/50' : 'text-white/20'}`}>
+                      {vibeCodingProjects.filter((p) => p.category === key).length}
+                    </span>
+                  )}
+                  {label}
+                </motion.button>
+              )
+            })}
           </motion.div>
 
-          {/* 项目网格 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {vibeCodingProjects.map((project, i) => (
-              <ProjectCard key={project.id} project={project} index={i} />
-            ))}
-          </div>
+          {/* ── 项目网格 — 带 AnimatePresence 过滤动画 ── */}
+          <motion.div layout className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <AnimatePresence mode="popLayout">
+              {filteredProjects.map((project, i) => (
+                <motion.div
+                  key={project.id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.92 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.92 }}
+                  transition={{ duration: 0.3, delay: i * 0.04 }}
+                >
+                  <ProjectCard project={project} index={i} />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </motion.div>
 
-          {/* 底部 */}
+          {/* ── 空状态 ── */}
+          {filteredProjects.length === 0 && (
+            <motion.div
+              className="flex flex-col items-center justify-center py-24 text-white/20"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
+              <span className="text-5xl mb-4">📦</span>
+              <p className="text-sm">该分类下暂无项目</p>
+            </motion.div>
+          )}
+
+          {/* ── 底部 ── */}
           <motion.p
             className="mt-16 text-center text-xs text-white/10"
             initial={{ opacity: 0 }}

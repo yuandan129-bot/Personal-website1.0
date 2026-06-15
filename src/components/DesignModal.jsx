@@ -1,120 +1,206 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
 
-// ── 设计稿图片展示 ──
-function DesignImage({ project, scrollRef }) {
+// ══════════════════════════════════════════
+// 图片内容区 — 可滚动
+// ══════════════════════════════════════════
+function ImageArea({ project }) {
+  // ── 多图模式：垂直堆叠 ──
+  if (project.images && project.images.length > 0) {
+    return (
+      <div className="flex flex-col gap-1.5">
+        {project.images.map((src, idx) => (
+          <img
+            key={idx}
+            src={src}
+            alt={`${project.title} – ${idx + 1}`}
+            className="w-full block"
+            loading="lazy"
+          />
+        ))}
+      </div>
+    )
+  }
+
+  // ── 单图模式 ──
+  if (project.image) {
+    return (
+      <img
+        src={project.image}
+        alt={project.title}
+        className="w-full block"
+      />
+    )
+  }
+
+  // ── 占位图 ──
   return (
     <div
-      ref={scrollRef}
-      className="w-full overflow-y-auto rounded-xl border border-white/[0.06]"
-      style={{ maxHeight: '55vh' }}
+      className="flex flex-col items-center justify-center gap-3"
+      style={{
+        minHeight: '420px',
+        background: `linear-gradient(135deg, ${project.accentColor || '#999'}10 0%, ${project.accentColor || '#999'}05 100%)`,
+      }}
     >
-      {project.image ? (
-        <img
-          src={project.image}
-          alt={project.title}
-          className="w-full"
-          style={{ display: 'block' }}
-        />
-      ) : (
-        <div
-          className="flex items-center justify-center"
-          style={{ minHeight: '400px', background: project.color }}
-        >
-          <span className="text-sm opacity-30" style={{ color: project.accentColor }}>
-            暂无图片
-          </span>
-        </div>
-      )}
+      <svg
+        width="40" height="40" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"
+        className="text-gray-300"
+      >
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+        <circle cx="8.5" cy="8.5" r="1.5" />
+        <polyline points="21 15 16 10 5 21" />
+      </svg>
+      <span className="text-xs text-gray-300 tracking-wider">图片占位</span>
     </div>
   )
 }
 
 // ══════════════════════════════════════════
-export default function DesignModal({ project, onClose }) {
+export default function DesignModal({ project, originRect, onClose }) {
   // 锁定 body 滚动
   useEffect(() => {
     document.body.style.overflow = 'hidden'
     return () => { document.body.style.overflow = '' }
   }, [])
 
+  // ESC 关闭
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  // ── 从卡片位置展开的动画参数 ──
+  const animConfig = useMemo(() => {
+    if (!originRect) {
+      return {
+        transformOrigin: '50% 50%',
+        initial: { opacity: 0, scale: 0.93, y: 40 },
+      }
+    }
+
+    const cardCX = originRect.left + originRect.width / 2
+    const cardCY = originRect.top + originRect.height / 2
+
+    const originX = (cardCX / window.innerWidth) * 100
+    const originY = (cardCY / window.innerHeight) * 100
+
+    const modalW = Math.min(780, window.innerWidth - 32)
+    const modalH = window.innerHeight * 0.85
+    const scaleX = originRect.width / modalW
+    const scaleY = originRect.height / modalH
+    const initialScale = Math.max(0.18, Math.min(scaleX, scaleY))
+
+    return {
+      transformOrigin: `${originX}% ${originY}%`,
+      initial: { opacity: 0, scale: initialScale },
+    }
+  }, [originRect])
+
+  // ── 副标题（取第一句，不超过 80 字）──
+  const subtitle = useMemo(() => {
+    if (!project.description) return ''
+    const firstSentence = project.description.split(/[。！!？?]/)[0]
+    if (firstSentence.length > 80) return firstSentence.slice(0, 80) + '…'
+    return firstSentence
+  }, [project.description])
+
   if (!project) return null
 
   return (
     <motion.div
-      className="fixed inset-0 z-50 flex items-center justify-center p-6"
+      className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
+      transition={{ duration: 0.25 }}
       onClick={onClose}
     >
-      {/* 遮罩 */}
+      {/* ── 遮罩 ── */}
       <div className="absolute inset-0 bg-black/75 backdrop-blur-md" />
 
-      {/* 内容面板 */}
+      {/* ── 内容面板（白色卡片）── */}
       <motion.div
-        className="relative bg-gray-900/90 backdrop-blur-2xl rounded-3xl border border-white/10
-                   shadow-[0_0_100px_rgba(0,0,0,0.6)] w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden"
-        initial={{ opacity: 0, scale: 0.93, y: 40 }}
+        className="relative w-full max-w-[780px] max-h-[92vh] flex flex-col overflow-hidden
+                   bg-white rounded-[20px]
+                   shadow-[0_8px_60px_rgba(0,0,0,0.25),0_2px_12px_rgba(0,0,0,0.10)]"
+        style={{ transformOrigin: animConfig.transformOrigin }}
+        initial={animConfig.initial}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.93, y: 40 }}
-        transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
+        exit={{ opacity: 0, scale: animConfig.initial.scale, transition: { duration: 0.2 } }}
+        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* ── 头部信息 ── */}
-        <div className="flex-shrink-0 px-8 pt-8 pb-4">
-          {/* 分类 + 关闭 */}
-          <div className="flex items-center justify-between mb-3">
-            <span
-              className="px-3 py-1 text-[10px] font-semibold rounded-full border tracking-wide"
-              style={{
-                background: `${(project.accentColor || '#fff')}20`,
-                borderColor: `${(project.accentColor || '#fff')}30`,
-                color: project.accentColor || '#fff',
-              }}
-            >
-              {project.category}
-            </span>
-            <button
-              onClick={onClose}
-              className="w-8 h-8 rounded-full bg-white/10 border border-white/15 text-white/60
-                         hover:bg-white/20 hover:text-white flex items-center justify-center transition-all"
-            >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            </button>
-          </div>
+        {/* ══════════════════════════════════════════ */}
+        {/* ── Home 指示条 ── */}
+        {/* ══════════════════════════════════════════ */}
+        <div className="flex-shrink-0 flex justify-center pt-3.5 pb-1">
+          <div className="w-28 h-1.5 rounded-full bg-gray-300" />
+        </div>
 
+        {/* ══════════════════════════════════════════ */}
+        {/* ── 固定头部：标题 / 副标题 / 标签 ── */}
+        {/* ══════════════════════════════════════════ */}
+        <div className="flex-shrink-0 flex flex-col items-center text-center px-10 pt-6 pb-5">
           {/* 标题 */}
-          <h2 className="text-2xl font-bold font-display text-white/90 mb-1">
+          <h2 className="text-2xl font-bold text-gray-900 tracking-wide mb-1.5">
             {project.title}
           </h2>
 
-          {/* 年份 + 标签 */}
-          <div className="flex items-center gap-3 flex-wrap">
-            {project.year && (
-              <span className="text-xs text-white/30 tracking-wider">{project.year}</span>
-            )}
-            {project.tags && project.tags.map((tag) => (
-              <span key={tag} className="text-[10px] text-white/35 px-2 py-0.5 rounded-full bg-white/[0.04] border border-white/[0.06]">
-                {tag}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {/* ── 长图滚动区 ── */}
-        <div className="flex-1 overflow-y-auto px-8 pb-8 pt-2">
-          <DesignImage project={project} />
-
-          {/* 描述 */}
-          {project.description && (
-            <p className="mt-6 text-sm text-white/50 leading-relaxed">
-              {project.description}
+          {/* 副标题（一句话简介）*/}
+          {subtitle && (
+            <p className="text-sm text-gray-400 leading-relaxed max-w-md mb-4">
+              {subtitle}
             </p>
           )}
+
+          {/* 标签组 */}
+          {project.tags && project.tags.length > 0 && (
+            <div className="flex items-center justify-center gap-2 flex-wrap">
+              {/* 分类标签 */}
+              {project.category && (
+                <span
+                  className="px-3 py-1 text-[11px] font-medium rounded-full border"
+                  style={{
+                    background: `${project.accentColor || '#333'}14`,
+                    borderColor: `${project.accentColor || '#333'}28`,
+                    color: project.accentColor || '#333',
+                  }}
+                >
+                  {project.category}
+                </span>
+              )}
+              {/* 其他标签 */}
+              {project.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="px-3 py-1 text-[11px] text-gray-400 rounded-full
+                             bg-gray-50 border border-gray-200"
+                >
+                  {tag}
+                </span>
+              ))}
+              {/* 年份 */}
+              {project.year && (
+                <span className="text-[11px] text-gray-300 tracking-wider ml-1">
+                  {project.year}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* ══════════════════════════════════════════ */}
+        {/* ── 可滚动图片区 ── */}
+        {/* ══════════════════════════════════════════ */}
+        <div
+          className="flex-1 overflow-y-auto"
+          style={{ paddingLeft: '15px', paddingRight: '15px', paddingBottom: '30px' }}
+        >
+          <div className="overflow-hidden">
+            <ImageArea project={project} />
+          </div>
         </div>
       </motion.div>
     </motion.div>

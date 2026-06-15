@@ -24,7 +24,13 @@
       "Bash(curl -s -o /dev/null -w \"CSS: %{http_code}\\\\n\" http://localhost:5173/src/components/GlassSurface.css)",
       "Bash(curl -s -o /dev/null -w \"Nav: %{http_code}\\\\n\" http://localhost:5173/src/components/GlassNav.jsx)",
       "Bash(curl -s -o /dev/null -w \"Reveal: %{http_code}\\\\n\" http://localhost:5173/src/components/DayNightReveal.jsx)",
-      "Bash(curl -s -o /dev/null -w \"Toggle: %{http_code}\\\\n\" http://localhost:5173/src/components/DayNightToggle.jsx)"
+      "Bash(curl -s -o /dev/null -w \"Toggle: %{http_code}\\\\n\" http://localhost:5173/src/components/DayNightToggle.jsx)",
+      "WebFetch(domain:github.com)",
+      "Bash(git -C /Users/yuandan/Desktop/personal_site remote -v)",
+      "Bash(git -C /Users/yuandan/Desktop/personal_site config http.postBuffer)",
+      "Bash(git -C /Users/yuandan/Desktop/personal_site config http.postBuffer 524288000)",
+      "Bash(git -C /Users/yuandan/Desktop/personal_site remote set-url origin git@github.com:yuandan129-bot/Personal-website1.0.git)",
+      "Bash(ssh -T git@github.com)"
     ]
   }
 }

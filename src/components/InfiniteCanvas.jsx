@@ -36,8 +36,8 @@ function packGrid(projects) {
   const occupied = new Set()
   const items = []
 
-  // 介绍卡片：L 尺寸（2×2），横版 4:3 构图，居中放置
-  const introCol = 1
+  // 介绍卡片：L 尺寸（2×2），居中放置（6列中占第2-3列，左右各2列对称）
+  const introCol = 2
   const introRow = 2
   for (let r = introRow; r < introRow + 2; r++) {
     for (let c = introCol; c < introCol + 2; c++) {
@@ -124,6 +124,7 @@ export default function InfiniteCanvas({ onCardClick }) {
 
   const isDragging = useRef(false)
   const hasMoved = useRef(false)
+  const pointerCaptured = useRef(false)
   const dragStart = useRef({ x: 0, y: 0 })
   const posStart = useRef({ x: 0, y: 0 })
   const velocity = useRef({ x: 0, y: 0 })
@@ -255,6 +256,9 @@ export default function InfiniteCanvas({ onCardClick }) {
 
   // ── 指针事件 ──
   const down = (e) => {
+    e.preventDefault()                              // 阻止浏览器将拖拽识别为返回手势
+    // 不在 down 阶段 capture —— 否则子元素 onClick 无法触发
+    pointerCaptured.current = false
     stop(); isDragging.current = true; hasMoved.current = false
     dragStart.current = { x: e.clientX, y: e.clientY }
     posStart.current = { ...positionRef.current }
@@ -265,7 +269,13 @@ export default function InfiniteCanvas({ onCardClick }) {
     const dt = Date.now() - lastMove.current.time
     const dx = e.clientX - dragStart.current.x
     const dy = e.clientY - dragStart.current.y
-    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) hasMoved.current = true
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+      hasMoved.current = true
+      // 确认是拖拽后才捕获指针 —— 防止卡片点击失效
+      if (!pointerCaptured.current && e.currentTarget.hasPointerCapture?.(e.pointerId) === false) {
+        try { e.currentTarget.setPointerCapture(e.pointerId); pointerCaptured.current = true } catch (_) {}
+      }
+    }
     if (dt > 0) {
       velocity.current = {
         x: ((e.clientX - lastMove.current.x) / dt) * 16,
@@ -282,13 +292,14 @@ export default function InfiniteCanvas({ onCardClick }) {
       y: applyBoundary(rawY, bounds.minY, bounds.maxY),
     })
   }
-  const up = () => {
+  const up = (e) => {
     isDragging.current = false
+    try { if (pointerCaptured.current) { e.currentTarget.releasePointerCapture(e.pointerId); pointerCaptured.current = false } } catch (_) {}
     if (hasMoved.current) animRef.current = requestAnimationFrame(applyInertia)
   }
 
   // ── 点击 ──
-  const cardClick = (item) => {
+  const cardClick = (item, e) => {
     if (hasMoved.current) return
     if (item.isPlaceholder) return
     if (item.isIntro) {
@@ -298,7 +309,10 @@ export default function InfiniteCanvas({ onCardClick }) {
       })
       return
     }
-    if (onCardClick) onCardClick(item)
+    if (onCardClick) {
+      const rect = e.currentTarget.getBoundingClientRect()
+      onCardClick(item, rect)
+    }
   }
 
   // ── 渲染一张卡片 ──
@@ -322,11 +336,14 @@ export default function InfiniteCanvas({ onCardClick }) {
           width: item.w,
           height: item.h,
         }}
-        onClick={(e) => { e.stopPropagation(); cardClick(item) }}
+        onClick={(e) => { e.stopPropagation(); cardClick(item, e) }}
       >
         {isIntro ? (
-          /* ── 介绍卡片 ── */
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 bg-white">
+          /* ── 介绍卡片（内容缩小 15%，保持网格占位不变）── */
+          <div
+            className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 bg-white"
+            style={{ transform: 'scale(0.85)', transformOrigin: 'center center' }}
+          >
             <div className="flex items-center gap-3 mb-4">
               <div className="h-px w-6 bg-gray-200" />
               <span className="text-[10px] font-bold tracking-[0.4em] uppercase text-gray-300">portfolio</span>
@@ -369,9 +386,9 @@ export default function InfiniteCanvas({ onCardClick }) {
   return (
     <div
       className="w-full h-full overflow-hidden relative cursor-grab active:cursor-grabbing no-select"
-      onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerLeave={up}
+      onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerLeave={up} onPointerCancel={up}
       onWheel={onWheel}
-      style={{ touchAction: 'none' }}
+      style={{ touchAction: 'none', overscrollBehavior: 'none' }}
     >
       <div
         className="absolute top-0 left-0"

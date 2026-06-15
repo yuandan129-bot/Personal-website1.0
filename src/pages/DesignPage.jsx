@@ -7,18 +7,28 @@ import DesignModal from '../components/DesignModal'
 
 export default function DesignPage() {
   const [selectedProject, setSelectedProject] = useState(null)
+  const [originRect, setOriginRect] = useState(null)
 
   return (
     <PageTransition className="bg-white">
       <BackButton variant="light" />
 
-      <InfiniteCanvas onCardClick={setSelectedProject} />
+      <InfiniteCanvas
+        onCardClick={(item, rect) => {
+          setSelectedProject(item)
+          setOriginRect(rect)
+        }}
+      />
 
       <AnimatePresence>
         {selectedProject && (
           <DesignModal
             project={selectedProject}
-            onClose={() => setSelectedProject(null)}
+            originRect={originRect}
+            onClose={() => {
+              setSelectedProject(null)
+              setOriginRect(null)
+            }}
           />
         )}
       </AnimatePresence>

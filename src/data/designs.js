@@ -47,6 +47,14 @@ export const designProjects = [
     color: '#fce4ec', textColor: '#ad1457', accentColor: '#d81b60',
     year: '2023', tags: ['包装', '潮玩', '联名'],
     image: '/images/design/Design8.png', imgW: 1844, imgH: 2202,
+    images: [
+      '/images/design/Design8/8.1.png',
+      '/images/design/Design8/8.2.png',
+      '/images/design/Design8/8.3.png',
+      '/images/design/Design8/8.4.png',
+      '/images/design/Design8/8.5.png',
+      '/images/design/Design8/8.6.png',
+    ],
     description: '泡泡玛特联名盲盒系列的包装设计，以潮流插画风格打造收藏级的开箱体验。通过材质、工艺与视觉的配合，提升产品的收藏仪式感。',
   },
   {
@@ -54,6 +62,13 @@ export const designProjects = [
     color: '#e8eaf6', textColor: '#283593', accentColor: '#3949ab',
     year: '2024', tags: ['品牌', '规范', '手册'],
     image: '/images/design/Design9.png', imgW: 1844, imgH: 2202,
+    images: [
+      '/images/design/Design9/9.1.png',
+      '/images/design/Design9/9.2.png',
+      '/images/design/Design9/9.3.png',
+      '/images/design/Design9/9.4.png',
+      '/images/design/Design9/9.5.png',
+    ],
     description: '飞书品牌规范手册的设计与编排，确保品牌在各触点的一致性和专业性。从色彩、字体、图形到版式，建立完整的设计语言系统。',
   },
   {
