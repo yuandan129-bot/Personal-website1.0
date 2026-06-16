@@ -65,7 +65,7 @@ export default function ThinkingPage() {
             {/* Row 1 */}
             <ThinkingColumn
               data={thinkingData.forAI}
-              speed={3.0}
+              speed={1.2}
               offset={0}
               onCardClick={(item, rect) => {
                 setSelectedItem(item)
@@ -76,7 +76,7 @@ export default function ThinkingPage() {
             {/* Row 2 — 错开偏移 */}
             <ThinkingColumn
               data={thinkingData.forAI}
-              speed={4.5}
+              speed={1.8}
               offset={0.5}
               onCardClick={(item, rect) => {
                 setSelectedItem(item)

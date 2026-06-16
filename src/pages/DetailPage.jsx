@@ -31,6 +31,7 @@ function parseBoldText(text) {
 function VibeCodingDetail({ item }) {
   const hasLinks = item.experienceUrl || item.githubUrl
   const hasFeatures = item.features && item.features.length > 0
+  const hasSteps = item.steps && item.steps.length > 0
   const hasUsage = item.usageInstructions
 
   return (
@@ -115,8 +116,76 @@ function VibeCodingDetail({ item }) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.2 }}
       >
-        {parseBoldText(item.detailedDescription)}
+        {parseBoldText(item.detailedDescription || item.description)}
       </motion.p>
+
+      {/* ── 功能流程 ── */}
+      {hasSteps && (
+        <motion.section
+          className="mb-8"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.22 }}
+        >
+          <h2 className="text-xs font-bold tracking-[0.25em] uppercase text-white/20 mb-5">
+            功能流程
+          </h2>
+
+          {/* 横向流程图 — flex-wrap，统一方框高度，整齐排列 */}
+          <div className="flex flex-wrap items-start gap-2">
+            {item.steps.map((step, i) => (
+              <div key={i} className="flex items-start gap-2">
+                {/* 步骤卡片 — 固定高度统一所有行 */}
+                <div
+                  className="group w-[200px] h-[76px] px-4 py-2.5 rounded-xl border border-white/[0.05]
+                             bg-white/[0.01] hover:bg-white/[0.04] hover:border-white/[0.12]
+                             transition-all duration-300 flex items-center"
+                  style={{
+                    boxShadow: `inset 0 0 0 0 ${item.coverColor || '#555'}00`,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.boxShadow = `inset 0 0 20px 0 ${item.coverColor || '#555'}15`
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = `inset 0 0 0 0 ${item.coverColor || '#555'}00`
+                  }}
+                >
+                  <p
+                    className="text-[13px] leading-relaxed"
+                    style={{ paddingLeft: '1.4em', textIndent: '-1.4em' }}
+                  >
+                    <span
+                      className="font-semibold transition-colors duration-300"
+                      style={{ color: `${item.coverColor || '#888'}b3` }}
+                    >
+                      {i + 1}.
+                    </span>
+                    <span className="text-white/45 group-hover:text-white/65 transition-colors duration-300">
+                      {' '}{step}
+                    </span>
+                  </p>
+                </div>
+
+                {/* 箭头 — 最后一步不显示 */}
+                {i < item.steps.length - 1 && (
+                  <svg
+                    width="14" height="14" viewBox="0 0 16 16" fill="none"
+                    className="flex-shrink-0 text-white/[0.12] mt-[30px]"
+                  >
+                    <path
+                      d="M6 4L10 8L6 12"
+                      stroke="currentColor"
+                      strokeWidth="1.2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                )}
+              </div>
+            ))}
+          </div>
+        </motion.section>
+      )}
 
       {/* ── 链接按钮组 — 优先展示体验地址 ── */}
       {hasLinks && (
@@ -229,7 +298,7 @@ function VibeCodingDetail({ item }) {
       )}
 
       {/* ── 占位提示 ── */}
-      {!hasFeatures && !hasUsage && item.status === 'placeholder' && (
+      {!hasFeatures && !hasSteps && !hasUsage && item.status === 'placeholder' && (
         <motion.div
           className="flex flex-col items-center justify-center py-16 text-white/10"
           initial={{ opacity: 0 }}

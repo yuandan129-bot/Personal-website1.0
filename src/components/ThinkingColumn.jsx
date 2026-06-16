@@ -5,55 +5,66 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 // 单张卡片
 // ══════════════════════════════════════════
 function HCard({ item, onClick }) {
+  const isPlaceholder = item.placeholder || (!item.image && !item.fullExcerpt)
+
   return (
     <motion.div
-      className="thinking-card group flex-shrink-0 w-72 cursor-pointer p-5 rounded-2xl
-                 border border-white/[0.04] bg-white/[0.03]
-                 hover:bg-white/[0.10] hover:border-white/20
-                 relative flex flex-col transition-all duration-300"
+      className={`thinking-card group flex-shrink-0 w-72 rounded-2xl
+                 border relative flex flex-col transition-all duration-300
+                 ${isPlaceholder
+                   ? 'cursor-default p-5 border-white/[0.02] bg-white/[0.01] opacity-70'
+                   : 'cursor-pointer p-5 border-white/[0.04] bg-white/[0.03] hover:bg-white/[0.10] hover:border-white/20'
+                 }`}
       style={{ zIndex: 1 }}
       onClick={(e) => {
+        if (isPlaceholder) return
         e.stopPropagation()
         const rect = e.currentTarget.getBoundingClientRect()
         onClick(item, rect)
       }}
     >
-      {/* hover 高亮底层 */}
-      <div
-        className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100
-                   transition-opacity duration-300 pointer-events-none z-0"
-        style={{
-          background: 'rgba(255,255,255,0.04)',
-          boxShadow: '0 0 40px rgba(255,255,255,0.05), 0 4px 20px rgba(0,0,0,0.3)',
-        }}
-      />
+      {/* hover 高亮底层 — 占位符不显示 */}
+      {!isPlaceholder && (
+        <div
+          className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100
+                     transition-opacity duration-300 pointer-events-none z-0"
+          style={{
+            background: 'rgba(255,255,255,0.04)',
+            boxShadow: '0 0 40px rgba(255,255,255,0.05), 0 4px 20px rgba(0,0,0,0.3)',
+          }}
+        />
+      )}
 
       {/* 内容层 */}
       <div className="relative z-[1] flex flex-col flex-1">
         <div className="flex items-start justify-between mb-2">
-          <h3 className="font-semibold text-white/85 text-sm leading-relaxed flex-1 line-clamp-2
-                         group-hover:text-white/95 transition-colors">
+          <h3 className={`font-semibold text-sm leading-relaxed flex-1 line-clamp-2 transition-colors
+                         ${isPlaceholder ? 'text-white/30 italic' : 'text-white/85 group-hover:text-white/95'}`}>
             {item.title}
           </h3>
-          <span className="flex-shrink-0 ml-2 text-white/20 group-hover:text-white/50 transition-colors text-xs">
-            →
-          </span>
+          {!isPlaceholder && (
+            <span className="flex-shrink-0 ml-2 text-white/20 group-hover:text-white/50 transition-colors text-xs">
+              →
+            </span>
+          )}
         </div>
 
-        <p className="text-xs text-white/35 leading-relaxed mb-3 flex-1 line-clamp-2">
+        <p className={`text-xs leading-relaxed mb-3 flex-1 line-clamp-2
+                      ${isPlaceholder ? 'text-white/15' : 'text-white/35'}`}>
           {item.excerpt}
         </p>
 
         <div className="flex items-center justify-between h-6 flex-shrink-0">
           <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-hidden">
             {item.tags.slice(0, 3).map((tag) => (
-              <span key={tag} className="px-2 py-0.5 text-[9px] rounded-full bg-white/8 text-white/40
-                                         whitespace-nowrap flex-shrink-0">
+              <span key={tag} className={`px-2 py-0.5 text-[9px] rounded-full whitespace-nowrap flex-shrink-0
+                                         ${isPlaceholder ? 'bg-white/5 text-white/20' : 'bg-white/8 text-white/40'}`}>
                 {tag}
               </span>
             ))}
           </div>
-          <span className="text-[10px] text-white/20 whitespace-nowrap flex-shrink-0 ml-2">
+          <span className={`text-[10px] whitespace-nowrap flex-shrink-0 ml-2
+                          ${isPlaceholder ? 'text-white/10' : 'text-white/20'}`}>
             {item.date}
           </span>
         </div>

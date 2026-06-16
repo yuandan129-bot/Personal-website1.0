@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { designProjects } from '../data/designs'
 
 const COLS = 6
@@ -7,6 +7,16 @@ const ROW_H = 190
 const GAP = 12
 const TILE_W = COLS * COL_W + (COLS + 1) * GAP
 const TARGET_TOTAL = 42   // 目标卡片总数（含介绍卡片，6列×约7行）
+
+// ── Fisher-Yates 洗牌 ──
+function shuffle(arr) {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
 
 // ── 中心介绍卡片 ──
 const INTRO_CARD = {
@@ -55,7 +65,7 @@ function packGrid(projects) {
   const existingCount = projects.length
   const needed = Math.max(0, TARGET_TOTAL - 1 - existingCount) // -1 因为介绍卡片占 1 个位置
   const placeholders = createPlaceholders(needed)
-  const allProjects = [...projects, ...placeholders]
+  const allProjects = shuffle([...projects, ...placeholders])
 
   allProjects.forEach((project) => {
     let sc = 1, sr = 1
@@ -114,8 +124,14 @@ function getIntroCenter(tileH, introCol, introRow) {
 // 组件
 // ══════════════════════════════════════════
 export default function InfiniteCanvas({ onCardClick }) {
-  const { all, tileH, introCol, introRow } = packGrid(designProjects)
-  const introCenter = getIntroCenter(tileH, introCol, introRow)
+  const { all, tileH, introCol, introRow } = useMemo(
+    () => packGrid(designProjects),
+    [],
+  )
+  const introCenter = useMemo(
+    () => getIntroCenter(tileH, introCol, introRow),
+    [tileH, introCol, introRow],
+  )
 
   const [position, setPosition] = useState({
     x: window.innerWidth / 2 - introCenter.cx,
