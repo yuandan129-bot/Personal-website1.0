@@ -103,6 +103,15 @@ function NightTitle() {
   )
 }
 
+// 本地占位图片 — 后续替换为正式素材（卡片尺寸 700:900 竖版）
+const NIGHT_GALLERY_IMAGES = [
+  { image: '/images/day-card-1.webp', text: 'Project 01' },
+  { image: '/images/day-card-2.webp', text: 'Project 02' },
+  { image: '/images/day-card-3.webp', text: 'Project 03' },
+  { image: '/images/day-card-4.webp', text: 'Project 04' },
+  { image: '/images/day-card-5.webp', text: 'Project 05' },
+]
+
 function NightCards() {
   return (
     <div
@@ -112,6 +121,7 @@ function NightCards() {
       }}
     >
       <CircularGallery
+        items={NIGHT_GALLERY_IMAGES}
         bend={3}
         textColor="#ffffff"
         borderRadius={0.05}
@@ -154,11 +164,11 @@ function DayTitle() {
 }
 
 const DAY_BOUNCE_IMAGES = [
-  '/images/day-card-1.png',
-  '/images/day-card-2.png',
-  '/images/day-card-3.png',
-  '/images/day-card-4.png',
-  '/images/day-card-5.png',
+  '/images/day-card-1.webp',
+  '/images/day-card-2.webp',
+  '/images/day-card-3.webp',
+  '/images/day-card-4.webp',
+  '/images/day-card-5.webp',
 ]
 
 function DayCards() {

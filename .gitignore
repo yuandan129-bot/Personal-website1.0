@@ -6,3 +6,4 @@ dist/
 
 # macOS
 .DS_Store
+*.mp4

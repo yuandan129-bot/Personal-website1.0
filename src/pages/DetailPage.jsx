@@ -350,7 +350,7 @@ export default function DetailPage({ type }) {
     return (
       <PageTransition className="bg-black">
         <BackButton />
-        <div className="w-full h-full overflow-y-auto">
+        <div className="w-full h-full overflow-y-auto smooth-scroll">
           <VibeCodingDetail item={item} />
         </div>
       </PageTransition>

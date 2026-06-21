@@ -25,7 +25,7 @@ export default function VibeCodingPage() {
     <PageTransition className="bg-black">
       <BackButton />
 
-      <div className="w-full h-full overflow-y-auto">
+      <div className="w-full h-full overflow-y-auto smooth-scroll">
         <div className="max-w-6xl mx-auto px-6 pt-24 pb-16">
           {/* ── 页面标题 — 白色 ShinyText 流光 ── */}
           <motion.div

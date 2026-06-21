@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
-import { designProjects } from '../data/designs'
+import { designProjects, getMediaType } from '../data/designs'
 
 const COLS = 6
 const COL_W = 254
@@ -383,16 +383,43 @@ export default function InfiniteCanvas({ onCardClick }) {
             <span className="text-gray-300 text-xs tracking-wider">待补充</span>
           </div>
         ) : (
-          /* ── 设计项目卡片 ── */
+          /* ── 设计项目卡片 — 支持 image / video / GIF ── */
           <>
-            {item.image && (
-              <img
-                src={item.image}
-                alt={item.title}
-                className="absolute inset-0 w-full h-full object-cover"
-                loading="lazy"
-              />
-            )}
+            {(() => {
+              const src = item.video || item.image
+              if (!src) return null
+              const type = getMediaType(src)
+
+              if (type === 'video') {
+                return (
+                  <>
+                    <video
+                      src={src}
+                      muted
+                      preload="metadata"
+                      playsInline
+                      disablePictureInPicture
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                    {/* 视频标识角标 */}
+                    <span className="absolute top-2 right-2 px-1.5 py-0.5 text-[9px] font-medium
+                                     rounded bg-black/50 text-white/70 backdrop-blur-sm">
+                      ▶
+                    </span>
+                  </>
+                )
+              }
+
+              // image / gif 都用 img
+              return (
+                <img
+                  src={src}
+                  alt={item.title}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  loading="lazy"
+                />
+              )
+            })()}
           </>
         )}
       </div>

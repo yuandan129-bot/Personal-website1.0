@@ -61,7 +61,8 @@ export default function DayNightReveal() {
 
     const animate = (time) => {
       const raw = Math.min((time - st) / duration, 1)
-      const progress = raw >= 1 ? 1 : 1 - Math.pow(2, -10 * raw)
+      // easeOutCubic：让波圈在 raw→1 前就趋近于 0，避免最后一帧几十 px 瞬间跳变
+      const progress = raw >= 1 ? 1 : 1 - Math.pow(1 - raw, 3)
       const r = targetDay ? progress * maxR : (1 - progress) * maxR
 
       // 遮罩计算移到 rAF 回调中，render 只读取 ref
@@ -134,20 +135,20 @@ export default function DayNightReveal() {
         {/* 夜晚图层 */}
         {USE_VIDEO ? (
           <video src="/videos/night.mp4" autoPlay muted loop playsInline disablePictureInPicture
-            poster="/images/night.png" className="absolute inset-0 w-full h-full"
+            poster="/images/night.webp" className="absolute inset-0 w-full h-full"
           />
         ) : (
-          <img src="/images/night.png" alt="" className="absolute inset-0 w-full h-full" draggable={false} />
+          <img src="/images/night.webp" alt="" className="absolute inset-0 w-full h-full" draggable={false} />
         )}
 
         {/* 白天图层 */}
         {USE_VIDEO ? (
           <video src="/videos/day.mp4" autoPlay muted loop playsInline disablePictureInPicture
-            poster="/images/day.png" className="absolute inset-0 w-full h-full"
+            poster="/images/day.webp" className="absolute inset-0 w-full h-full"
             style={{ maskImage: dayMask, WebkitMaskImage: dayMask }}
           />
         ) : (
-          <img src="/images/day.png" alt="" className="absolute inset-0 w-full h-full"
+          <img src="/images/day.webp" alt="" className="absolute inset-0 w-full h-full"
             style={{ maskImage: dayMask, WebkitMaskImage: dayMask }} draggable={false}
           />
         )}

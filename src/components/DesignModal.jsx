@@ -1,36 +1,60 @@
 import { useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
+import { getMediaType } from '../data/designs'
 
 // ══════════════════════════════════════════
-// 图片内容区 — 可滚动
+// 单媒体渲染 — 根据类型自动选择 img / video
+// ══════════════════════════════════════════
+function MediaItem({ src, alt = '', className = '' }) {
+  const type = getMediaType(src)
+
+  if (type === 'video') {
+    return (
+      <video
+        src={src}
+        controls
+        preload="metadata"
+        playsInline
+        className={`w-full block ${className}`}
+        style={{ background: '#000' }}
+      />
+    )
+  }
+
+  // image / gif 都用 img（浏览器原生支持 GIF 动画）
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className={`w-full block ${className}`}
+      loading="lazy"
+    />
+  )
+}
+
+// ══════════════════════════════════════════
+// 媒体内容区 — 可滚动，支持图片 / 视频 / GIF 混合
 // ══════════════════════════════════════════
 function ImageArea({ project }) {
-  // ── 多图模式：垂直堆叠 ──
+  // ── 多媒体模式：images 数组可混合图片 + 视频 + GIF ──
   if (project.images && project.images.length > 0) {
     return (
       <div className="flex flex-col gap-1.5">
         {project.images.map((src, idx) => (
-          <img
+          <MediaItem
             key={idx}
             src={src}
             alt={`${project.title} – ${idx + 1}`}
-            className="w-full block"
-            loading="lazy"
           />
         ))}
       </div>
     )
   }
 
-  // ── 单图模式 ──
-  if (project.image) {
-    return (
-      <img
-        src={project.image}
-        alt={project.title}
-        className="w-full block"
-      />
-    )
+  // ── 单媒体模式（image / video / GIF 自动检测）──
+  if (project.image || project.video) {
+    const src = project.video || project.image
+    return <MediaItem src={src} alt={project.title} />
   }
 
   // ── 占位图 ──
@@ -51,7 +75,7 @@ function ImageArea({ project }) {
         <circle cx="8.5" cy="8.5" r="1.5" />
         <polyline points="21 15 16 10 5 21" />
       </svg>
-      <span className="text-xs text-gray-300 tracking-wider">图片占位</span>
+      <span className="text-xs text-gray-300 tracking-wider">媒体占位</span>
     </div>
   )
 }
