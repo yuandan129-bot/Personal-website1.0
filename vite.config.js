@@ -47,9 +47,7 @@ function stripRawImagesPlugin() {
   }
 }
 
-export default defineConfig(({ mode }) => ({
-  // GitHub Pages 部署路径：生产构建时加上 repo 名称作为 base
-  base: mode === 'production' ? '/Personal-website1.0/' : '/',
+export default defineConfig({
   plugins: [react(), stripRawImagesPlugin()],
   server: {
     allowedHosts: true,
@@ -80,4 +78,4 @@ export default defineConfig(({ mode }) => ({
     // 静态资源按类型分目录
     assetsDir: 'assets',
   },
-}))
+})
