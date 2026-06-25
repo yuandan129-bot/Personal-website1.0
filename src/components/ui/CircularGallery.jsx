@@ -432,6 +432,16 @@ class App {
     this.onResize()
     this.createGeometry()
     this.createMedias(items, bend, textColor, borderRadius, font)
+
+    // ★ 初始偏移：页面加载时卡片直接填满视频边框，不出现右侧空白
+    if (this.medias.length > 0) {
+      const cardWidth = this.medias[0].width
+      const offset = cardWidth * 3 // 前移 3 张卡片的距离
+      this.scroll.current = offset
+      this.scroll.target = offset
+      this.scroll.last = offset
+    }
+
     this.update()
     this.addEventListeners()
   }

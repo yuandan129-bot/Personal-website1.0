@@ -71,7 +71,10 @@ export default function DayNightReveal() {
 
     const animate = (time) => {
       const raw = Math.min((time - st) / duration, 1)
-      const progress = raw >= 1 ? 1 : 1 - Math.pow(1 - raw, 3)
+      // easeOutQuad：比 easeOutCubic 更均匀，不会在最后 10% 时间"卡住"
+      const progress = raw >= 1 ? 1 : 1 - Math.pow(1 - raw, 2)
+      // 进度 > 99.5% 时直接收尾，避免最后几帧无意义的微变化
+      const done = raw >= 1 || progress > 0.995
       const r = targetDay ? progress * maxR : (1 - progress) * maxR
 
       // ★ 直接写 DOM，零 React 开销
@@ -81,7 +84,7 @@ export default function DayNightReveal() {
         dayEl.style.webkitMaskImage = mask
       }
 
-      if (raw < 1) {
+      if (!done) {
         animRef.current = requestAnimationFrame(animate)
       } else {
         // ★ 动画结束：React 接管

@@ -341,7 +341,7 @@ export default function InfiniteCanvas({ onCardClick }) {
         key={item.id}
         className={`absolute rounded-2xl overflow-hidden transition-all duration-300
                    ${isIntro
-                     ? 'cursor-pointer bg-white border border-gray-200 shadow-[0_4px_16px_rgba(0,0,0,0.10)] hover:shadow-[0_6px_24px_rgba(0,0,0,0.16)]'
+                     ? 'cursor-pointer'
                      : isPlaceholder
                        ? 'bg-gray-100 border border-gray-200'
                        : 'cursor-pointer bg-white shadow-[0_2px_12px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_20px_rgba(0,0,0,0.14)]'
@@ -351,17 +351,14 @@ export default function InfiniteCanvas({ onCardClick }) {
           top: item.y,
           width: item.w,
           height: item.h,
-          // ★ 屏幕外卡片跳过渲染：大幅减少 Design 页首屏 layout/paint 开销
-          contentVisibility: 'auto',
-          containIntrinsicSize: `auto ${item.w}px ${item.h}px`,
         }}
         onClick={(e) => { e.stopPropagation(); cardClick(item, e) }}
       >
         {isIntro ? (
-          /* ── 介绍卡片（内容缩小 15%，保持网格占位不变）── */
-          <div
-            className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 bg-white"
-            style={{ transform: 'scale(0.85)', transformOrigin: 'center center' }}
+          /* ── 介绍卡片 — 透明底 + 轻边框，融入画布、间距与周围一致 ── */
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6
+                          bg-white/60 backdrop-blur-sm rounded-2xl border border-gray-200/60"
+               style={{ boxShadow: '0 1px 6px rgba(0,0,0,0.04)' }}
           >
             <div className="flex items-center gap-3 mb-4">
               <div className="h-px w-6 bg-gray-200" />

@@ -76,12 +76,6 @@ export default function VibeCodingPage() {
                   whileHover={{ scale: 1.04 }}
                   whileTap={{ scale: 0.96 }}
                 >
-                  {/* 数量小标 */}
-                  {key !== '全部' && (
-                    <span className={`ml-1.5 text-[10px] ${isActive ? 'text-black/50' : 'text-white/20'}`}>
-                      {vibeCodingProjects.filter((p) => p.category === key).length}
-                    </span>
-                  )}
                   {label}
                 </motion.button>
               )
@@ -95,10 +89,14 @@ export default function VibeCodingPage() {
                 <motion.div
                   key={project.id}
                   layout
-                  initial={{ opacity: 0, scale: 0.92 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.92 }}
-                  transition={{ duration: 0.3, delay: i * 0.04 }}
+                  initial={{ opacity: 0, y: 48, scale: 0.94 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 24, scale: 0.94, transition: { duration: 0.2 } }}
+                  transition={{
+                    duration: 0.55,
+                    delay: i * 0.08,
+                    ease: [0.16, 1, 0.3, 1],
+                  }}
                 >
                   <ProjectCard project={project} index={i} />
                 </motion.div>

@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useCallback, useRef } from 'react'
-import { Routes, Route, useLocation } from 'react-router-dom'
-import { AnimatePresence, motion } from 'framer-motion'
+import { Routes, Route } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import GlassNav from './components/GlassNav'
 
 // ── 路由级代码分割：每个页面独立 chunk，按需加载 ──
@@ -13,12 +13,15 @@ const DetailPage      = lazy(() => import('./pages/DetailPage'))
 // ── 预加载状态追踪：避免重复 import ──
 const preloaded = new Set()
 
-/** 后台静默预加载页面模块 */
+/**
+ * 后台静默预加载页面模块
+ * @returns {Promise} 可用于链式等待
+ */
 function preloadPage(importFn) {
   const key = importFn.toString()
-  if (preloaded.has(key)) return
+  if (preloaded.has(key)) return Promise.resolve()
   preloaded.add(key)
-  importFn().catch(() => {})
+  return importFn().catch(() => {})
 }
 
 // ══════════════════════════════════════════
@@ -49,33 +52,27 @@ function PageLoader() {
 }
 
 export default function App() {
-  const location = useLocation()
-  const idleIdRef = useRef(null)
   const preloadStartedRef = useRef(false)
 
-  // ── 尽早后台预加载所有子页面（不等 idle，用短延迟启动）──
+  // ══════════════════════════════════════════
+  // ★ 流水线式后台预加载：一级 → 二级 → 三级
+  //    用户任何时候点击都不会卡在下载上
+  // ══════════════════════════════════════════
   useEffect(() => {
     if (preloadStartedRef.current) return
     preloadStartedRef.current = true
 
-    const doPreload = () => {
-      preloadPage(() => import('./pages/VibeCodingPage'))
-      preloadPage(() => import('./pages/ThinkingPage'))
-      preloadPage(() => import('./pages/DesignPage'))
+    // ── 阶段 1：二级页面 — 立即并行预加载 ──
+    const level2 = Promise.allSettled([
+      preloadPage(() => import('./pages/VibeCodingPage')),
+      preloadPage(() => import('./pages/ThinkingPage')),
+      preloadPage(() => import('./pages/DesignPage')),
+    ])
+
+    // ── 阶段 2：二级全部加载完成后 → 自动开始三级 ──
+    level2.then(() => {
       preloadPage(() => import('./pages/DetailPage'))
-    }
-
-    // 策略1：300ms 后立即开始预加载（不等 idle）
-    const timer = setTimeout(doPreload, 300)
-    // 策略2：idle 时也触发（双保险）
-    idleIdRef.current = requestIdleCallback?.(doPreload, { timeout: 4000 })
-
-    return () => {
-      clearTimeout(timer)
-      if (idleIdRef.current) {
-        requestIdleCallback ? cancelIdleCallback(idleIdRef.current) : clearTimeout(idleIdRef.current)
-      }
-    }
+    })
   }, [])
 
   // ── 导航 hover 预加载 ──
@@ -91,19 +88,16 @@ export default function App() {
 
   return (
     <>
-      {/* Suspense 包裹路由切换 —— 懒加载 chunk 未就绪时显示 PageLoader */}
       <Suspense fallback={<PageLoader />}>
-        <AnimatePresence mode="sync">
-          <Routes location={location} key={location.pathname}>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/vibe-coding" element={<VibeCodingPage />} />
-            <Route path="/design" element={<DesignPage />} />
-            <Route path="/thinking" element={<ThinkingPage />} />
-            <Route path="/vibe-coding/:id" element={<DetailPage type="vibe-coding" />} />
-            <Route path="/design/:id" element={<DetailPage type="design" />} />
-            <Route path="/thinking/:id" element={<DetailPage type="thinking" />} />
-          </Routes>
-        </AnimatePresence>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/vibe-coding" element={<VibeCodingPage />} />
+          <Route path="/design" element={<DesignPage />} />
+          <Route path="/thinking" element={<ThinkingPage />} />
+          <Route path="/vibe-coding/:id" element={<DetailPage type="vibe-coding" />} />
+          <Route path="/design/:id" element={<DetailPage type="design" />} />
+          <Route path="/thinking/:id" element={<DetailPage type="thinking" />} />
+        </Routes>
       </Suspense>
 
       <GlassNav onPreload={handleNavPreload} />
