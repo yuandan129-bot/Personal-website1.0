@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import GlassSurface from './GlassSurface'
 
 /* ====== 图标（支持 responsive size） ====== */
@@ -16,10 +17,7 @@ function HomeIcon({ size = 18 }) {
 function CodeIcon({ size = 18 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="16 18 22 12 16 6" />
-      <polyline points="8 6 2 12 8 18" />
-      <line x1="8" y1="2" x2="16" y2="2" strokeWidth="1.2" opacity="0.4" />
-      <line x1="12" y1="2" x2="12" y2="6" strokeWidth="1.2" opacity="0.4" />
+      <path d="M12 2l2.5 5.5L20 10l-5.5 2.5L12 18l-2.5-5.5L4 10l5.5-2.5z" />
     </svg>
   )
 }
@@ -27,8 +25,9 @@ function CodeIcon({ size = 18 }) {
 function DesignIcon({ size = 18 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 2l1.5 4.5L18 8l-4.5 1.5L12 14l-1.5-4.5L6 8l4.5-1.5z" />
-      <path d="M12 22V14" />
+      <path d="M12 2L2 7l10 5 10-5-10-5z" />
+      <path d="M2 17l10 5 10-5" />
+      <path d="M2 12l10 5 10-5" />
     </svg>
   )
 }
@@ -46,29 +45,30 @@ function ThinkIcon({ size = 18 }) {
 
 /* ====== 单个导航按钮 ====== */
 
-function NavButton({ to, icon: Icon, label, isActive, isLight, compact, isHome }) {
+function NavButton({ to, icon: Icon, label, isActive, isLight, compact, isHome, onPreload }) {
   const navigate = useNavigate()
-  const iconSize = compact ? 15 : (isHome ? 20 : 18)
-  const btnWidth = compact ? (isHome ? 62 : 76) : (isHome ? 110 : 140)
-  const btnHeight = compact ? 38 : (isHome ? 48 : 44)
-  const textSize = compact ? 'text-[10px]' : (isHome ? 'text-sm' : 'text-xs')
-  const padding = compact ? 'px-1.5' : (isHome ? 'px-4' : 'px-3')
+  const iconSize = compact ? 15 : 18
+  const btnWidth = compact ? (isHome ? 46 : 76) : (isHome ? 100 : 140)
+  const btnHeight = compact ? 38 : 44
+  const textSize = compact ? 'text-[10px]' : 'text-xs'
+  const padding = compact ? 'px-1.5' : 'px-3'
 
   const textColor = isLight
     ? { active: 'text-black', inactive: 'text-black/50' }
     : { active: 'text-white', inactive: 'text-white/65' }
 
-  // 直接 onClick 导航，不依赖 <Link>，避免 GlassSurface SVG 层阻断点击
-  const handleClick = (e) => {
-    e.preventDefault()
-    e.stopPropagation()
+  // 直接 onClick 导航
+  const handleClick = () => {
     navigate(to)
   }
 
   return (
-    <div
+    <motion.div
       className="no-underline flex-shrink-0"
       onClick={handleClick}
+      onMouseEnter={() => onPreload?.(to)}
+      whileTap={{ scale: 0.93 }}
+      transition={{ type: 'spring', stiffness: 600, damping: 30 }}
       style={{ cursor: 'pointer' }}
       role="button"
       tabIndex={0}
@@ -77,8 +77,8 @@ function NavButton({ to, icon: Icon, label, isActive, isLight, compact, isHome }
       <GlassSurface
         width={btnWidth}
         height={btnHeight}
-        borderRadius={isHome ? 26 : 22}
-        distortionScale={isHome ? -320 : -280}
+        borderRadius={22}
+        distortionScale={-280}
         redOffset={0}
         greenOffset={15}
         blueOffset={30}
@@ -86,15 +86,12 @@ function NavButton({ to, icon: Icon, label, isActive, isLight, compact, isHome }
         displace={0}
         brightness={isLight ? 100 : 50}
         opacity={0.93}
-        backgroundOpacity={isHome ? 0.12 : (isActive ? 0.1 : 0.04)}
+        backgroundOpacity={isActive ? 0.1 : 0.04}
         saturation={1}
-        borderWidth={isHome ? 0.12 : 0.08}
+        borderWidth={0.08}
         mixBlendMode="screen"
         style={{ pointerEvents: 'none' }}
-        className={isHome
-          ? (isLight ? 'ring-1 ring-black/15' : 'ring-1 ring-white/25')
-          : (isActive ? (isLight ? 'ring-1 ring-black/10' : 'ring-1 ring-white/20') : '')
-        }
+        className={isActive ? (isLight ? 'ring-1 ring-black/10' : 'ring-1 ring-white/20') : ''}
       >
         <div className={`flex items-center gap-1.5 ${padding} select-none`}>
           <span className={`transition-colors duration-300 flex-shrink-0 ${isActive ? textColor.active : textColor.inactive}`}>
@@ -109,7 +106,7 @@ function NavButton({ to, icon: Icon, label, isActive, isLight, compact, isHome }
           </span>
         </div>
       </GlassSurface>
-    </div>
+    </motion.div>
   )
 }
 
@@ -122,7 +119,7 @@ const NAV_ITEMS = [
   { to: '/thinking',      icon: ThinkIcon,  label: 'Thinking',    isHome: false },
 ]
 
-export default function GlassNav() {
+export default function GlassNav({ onPreload }) {
   const location = useLocation()
   const isLight = location.pathname === '/design'
   const [compact, setCompact] = useState(false)
@@ -157,6 +154,7 @@ export default function GlassNav() {
           isLight={isLight}
           compact={compact}
           isHome={item.isHome}
+          onPreload={onPreload}
         />
       ))}
     </nav>

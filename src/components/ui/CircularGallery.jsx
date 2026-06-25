@@ -1,5 +1,6 @@
 import { Camera, Mesh, Plane, Program, Renderer, Texture, Transform } from 'ogl'
 import { useEffect, useRef } from 'react'
+import usePageVisible from '../../lib/usePageVisible'
 
 import './CircularGallery.css'
 
@@ -423,7 +424,7 @@ class App {
     // ★ 自动滚动
     this.autoScroll = true
     this.autoScrollTimer = null
-    this.autoScrollSpeed = 0.073 // 每帧推进量（原 0.15 → 0.081 → 0.073）
+    this.autoScrollSpeed = 0.041 // 每帧推进量（累计降低 ~44%，舒缓流动）
 
     this.createRenderer()
     this.createCamera()
@@ -614,9 +615,15 @@ class App {
     if (this.medias) {
       this.medias.forEach((media) => media.update(this.scroll, direction))
     }
-    this.renderer.render({ scene: this.scene, camera: this.camera })
+    // 页面可见时才执行 WebGL 渲染（不可见时保持 scroll 更新，恢复时不跳变）
+    if (this._visible !== false) {
+      this.renderer.render({ scene: this.scene, camera: this.camera })
+    }
     this.scroll.last = this.scroll.current
     this.raf = window.requestAnimationFrame(this.update.bind(this))
+  }
+  setVisible(v) {
+    this._visible = v
   }
   onMouseEnter() {
     this._pauseAutoScroll()
@@ -687,13 +694,15 @@ export default function CircularGallery({
   scrollEase = 0.05,
 }) {
   const containerRef = useRef(null)
+  const appRef = useRef(null)
+  const pageVisible = usePageVisible()
+
   useEffect(() => {
     if (!containerRef.current) return
-    let app
     let isMounted = true
     resolveFont(font, fontUrl).then((resolvedFont) => {
       if (!isMounted || !containerRef.current) return
-      app = new App(containerRef.current, {
+      const app = new App(containerRef.current, {
         items,
         bend,
         textColor,
@@ -702,11 +711,24 @@ export default function CircularGallery({
         scrollSpeed,
         scrollEase,
       })
+      appRef.current = app
+      app.setVisible(pageVisible)
     })
     return () => {
       isMounted = false
-      if (app) app.destroy()
+      if (appRef.current) {
+        appRef.current.destroy()
+        appRef.current = null
+      }
     }
   }, [items, bend, textColor, borderRadius, font, fontUrl, scrollSpeed, scrollEase])
+
+  // 页面可见性变化时同步到 App 实例
+  useEffect(() => {
+    if (appRef.current) {
+      appRef.current.setVisible(pageVisible)
+    }
+  }, [pageVisible])
+
   return <div className="circular-gallery" ref={containerRef} />
 }

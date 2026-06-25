@@ -1,7 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import DayNightToggle from './DayNightToggle'
 import LiveClock from './LiveClock'
-import SteamEffect from './SteamEffect'
 import VideoFrame from './VideoFrame'
 import VideoFrameContent from './VideoFrameContent'
 
@@ -27,12 +26,12 @@ function buildMask(ox, oy, r) {
 
 export default function DayNightReveal() {
   const [isDay, setIsDay] = useState(false)
-  const [expandAnim, setExpandAnim] = useState(null)
+  const [expandAnim, setExpandAnim] = useState(null)   // 非 null = 动画中，携带 isDayTarget
   const containerRef = useRef(null)
   const switchRef = useRef(null)
   const animRef = useRef(null)
-  // 缓存动画中的遮罩字符串，避免每帧在 render 中重复计算
-  const animMaskRef = useRef(EMPTY_MASK)
+  // ★ 白天图层的 DOM 引用：动画中直接写 mask，绕过 React 重渲染
+  const dayImgRef = useRef(null)
 
   const [layout, setLayout] = useState(() => {
     const vw = window.innerWidth
@@ -52,28 +51,45 @@ export default function DayNightReveal() {
     return () => window.removeEventListener('resize', calc)
   }, [])
 
+  // ══════════════════════════════════════════
+  // ★ 优化后的过渡动画
+  //   - 开始：setExpandAnim 一次 → React 渲染（时钟 / VideoFrameContent 开始 CSS transition）
+  //   - 中间：直接写 DOM element.style.maskImage → 零 React 开销
+  //   - 结束：setExpandAnim(null) + setIsDay → React 渲染一次接管
+  //   从 ~90 次 React 重渲染 → 2 次
+  // ══════════════════════════════════════════
   const startTransition = useCallback((dx, dy, targetDay) => {
     const maxR = Math.sqrt(
       Math.max(dx, DESIGN_W - dx) ** 2 + Math.max(dy, DESIGN_H - dy) ** 2
     )
     const duration = 1600
     const st = performance.now()
+    const dayEl = dayImgRef.current
+
+    // ★ 动画开始：只触发一次 React 渲染，让时钟和视频框开始 CSS transition
+    setExpandAnim({ isDayTarget: targetDay })
 
     const animate = (time) => {
       const raw = Math.min((time - st) / duration, 1)
-      // easeOutCubic：让波圈在 raw→1 前就趋近于 0，避免最后一帧几十 px 瞬间跳变
       const progress = raw >= 1 ? 1 : 1 - Math.pow(1 - raw, 3)
       const r = targetDay ? progress * maxR : (1 - progress) * maxR
 
-      // 遮罩计算移到 rAF 回调中，render 只读取 ref
-      animMaskRef.current = r > 1 ? buildMask(dx, dy, r) : EMPTY_MASK
+      // ★ 直接写 DOM，零 React 开销
+      if (dayEl) {
+        const mask = r > 1 ? buildMask(dx, dy, r) : EMPTY_MASK
+        dayEl.style.maskImage = mask
+        dayEl.style.webkitMaskImage = mask
+      }
 
-      // 仍然触发 React 渲染（时钟需要同步），但 mask 不再在 render 里计算
       if (raw < 1) {
-        setExpandAnim({ isDayTarget: targetDay })
         animRef.current = requestAnimationFrame(animate)
       } else {
-        animMaskRef.current = targetDay ? FULL_MASK : EMPTY_MASK
+        // ★ 动画结束：React 接管
+        if (dayEl) {
+          const finalMask = targetDay ? FULL_MASK : EMPTY_MASK
+          dayEl.style.maskImage = finalMask
+          dayEl.style.webkitMaskImage = finalMask
+        }
         setExpandAnim(null)
         setIsDay(targetDay)
       }
@@ -101,11 +117,9 @@ export default function DayNightReveal() {
   }, [layout.scale])
 
   const handleClick = useCallback((e) => {
-    // 不响应开关区域和视频框内的点击（视频框内有自己的交互）
     if (e.target.closest('[data-switch-container]')) return
     if (e.target.closest('[data-video-frame]')) return
     const { x, y } = toDesign(e.clientX, e.clientY)
-    // 动画中取当前动画目标的相反方向，静止时取当前状态的相反方向
     const currentTarget = expandAnim ? expandAnim.isDayTarget : isDay
     startTransition(x, y, !currentTarget)
   }, [isDay, expandAnim, startTransition, toDesign])
@@ -114,9 +128,9 @@ export default function DayNightReveal() {
     return () => { if (animRef.current) cancelAnimationFrame(animRef.current) }
   }, [])
 
-  // 遮罩：动画中读 ref（已预计算），静止时读常量
-  const dayMask = expandAnim ? animMaskRef.current : (isDay ? FULL_MASK : EMPTY_MASK)
-  // 时钟：动画中跟随目标状态，静止时跟随 isDay
+  // 静止时：React 全权控制 mask（通过 style prop）
+  // 动画中：dayImgRef 被直接 DOM 操作，style prop 作为初始值
+  const staticDayMask = isDay ? FULL_MASK : EMPTY_MASK
   const clockIsDay = expandAnim ? expandAnim.isDayTarget : isDay
 
   return (
@@ -132,7 +146,7 @@ export default function DayNightReveal() {
           overflow: 'hidden',
         }}
       >
-        {/* 夜晚图层 */}
+        {/* 夜晚图层 — 始终可见 */}
         {USE_VIDEO ? (
           <video src="/videos/night.mp4" autoPlay muted loop playsInline disablePictureInPicture
             poster="/images/night.webp" className="absolute inset-0 w-full h-full"
@@ -141,19 +155,19 @@ export default function DayNightReveal() {
           <img src="/images/night.webp" alt="" className="absolute inset-0 w-full h-full" draggable={false} />
         )}
 
-        {/* 白天图层 */}
+        {/* 白天图层 — mask 控制可见范围 */}
         {USE_VIDEO ? (
-          <video src="/videos/day.mp4" autoPlay muted loop playsInline disablePictureInPicture
+          <video ref={dayImgRef} src="/videos/day.mp4" autoPlay muted loop playsInline disablePictureInPicture
             poster="/images/day.webp" className="absolute inset-0 w-full h-full"
-            style={{ maskImage: dayMask, WebkitMaskImage: dayMask }}
+            style={{ maskImage: staticDayMask, WebkitMaskImage: staticDayMask }}
           />
         ) : (
-          <img src="/images/day.webp" alt="" className="absolute inset-0 w-full h-full"
-            style={{ maskImage: dayMask, WebkitMaskImage: dayMask }} draggable={false}
+          <img ref={dayImgRef} src="/images/day.webp" alt="" className="absolute inset-0 w-full h-full"
+            style={{ maskImage: staticDayMask, WebkitMaskImage: staticDayMask }} draggable={false}
           />
         )}
 
-        {/* 视频框 —— 动效容器（day/night 双图层） */}
+        {/* 视频框 —— 动效容器 */}
         <VideoFrame width={755} height={446}
           style={{ left: 'calc(50% - 25px)', top: 'calc(45% - 110px)', transform: 'translate(-50%, -50%)' }}
         >
@@ -165,12 +179,7 @@ export default function DayNightReveal() {
           <LiveClock isDay={clockIsDay} />
         </div>
 
-        {/* 茶杯热汽（隐藏） */}
-        {false && (
-          <SteamEffect width={180} height={280} intensity={0.9} speed={0.8}
-            style={{ left: '50%', bottom: '28%', transform: 'translateX(calc(-50% + 320px))' }}
-          />
-        )}
+        {/* SteamEffect 已移除——需要时恢复组件文件并加入 import */}
       </div>
 
       {/* 右上角开关 */}

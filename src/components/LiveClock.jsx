@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
 
 function pad(n) {
   return String(n).padStart(2, '0')
 }
 
-export default function LiveClock({ isDay = true }) {
+const LiveClock = memo(function LiveClock({ isDay = true }) {
   const [time, setTime] = useState(new Date())
 
   useEffect(() => {
@@ -67,4 +67,6 @@ export default function LiveClock({ isDay = true }) {
       </span>
     </div>
   )
-}
+})
+
+export default LiveClock

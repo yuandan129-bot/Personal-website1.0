@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import { useState, useRef, useEffect, useCallback } from 'react'
+import usePageVisible from '../lib/usePageVisible'
 
 // ══════════════════════════════════════════
 // 单张卡片
@@ -79,6 +80,7 @@ function HCard({ item, onClick }) {
 export default function ThinkingColumn({ data, speed = 2, offset = 0, onCardClick, hideTitle = false }) {
   const duplicated = [...data.items, ...data.items, ...data.items]
   const [paused, setPaused] = useState(false)
+  const pageVisible = usePageVisible()
 
   // ── 滚动引擎 refs ──
   const scrollElRef = useRef(null)
@@ -95,9 +97,11 @@ export default function ThinkingColumn({ data, speed = 2, offset = 0, onCardClic
   const dragStart = useRef({ x: 0, pos: 0 })
   const lastMove = useRef({ x: 0, time: 0 })
 
-  // ── paused 同步到 ref（rAF 内读取避免闭包陈旧）──
+  // ── paused / pageVisible 同步到 ref（rAF 内读取避免闭包陈旧）──
   const pausedRef = useRef(false)
+  const visibleRef = useRef(true)
   useEffect(() => { pausedRef.current = paused }, [paused])
+  useEffect(() => { visibleRef.current = pageVisible }, [pageVisible])
 
   // ── 测量内容宽度 → 计算自动滚动速度 ──
   useEffect(() => {
@@ -118,6 +122,12 @@ export default function ThinkingColumn({ data, speed = 2, offset = 0, onCardClic
     const tick = (now) => {
       const dt = Math.min((now - lastTime) / 1000, 0.1)
       lastTime = now
+
+      // 页面不可见时跳过更新（节省 CPU，恢复时自动继续）
+      if (!visibleRef.current) {
+        animRef.current = requestAnimationFrame(tick)
+        return
+      }
 
       if (isDragging.current) {
         // 拖拽中 — 不自动滚动，位置由 move 回调直接写入

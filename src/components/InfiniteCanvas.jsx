@@ -351,6 +351,9 @@ export default function InfiniteCanvas({ onCardClick }) {
           top: item.y,
           width: item.w,
           height: item.h,
+          // ★ 屏幕外卡片跳过渲染：大幅减少 Design 页首屏 layout/paint 开销
+          contentVisibility: 'auto',
+          containIntrinsicSize: `auto ${item.w}px ${item.h}px`,
         }}
         onClick={(e) => { e.stopPropagation(); cardClick(item, e) }}
       >
